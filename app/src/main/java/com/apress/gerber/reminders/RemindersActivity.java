@@ -1,13 +1,18 @@
 package com.apress.gerber.reminders;
 
+import android.app.Dialog;
 import android.database.Cursor;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
+import android.widget.Toast;
 
 public class RemindersActivity extends AppCompatActivity {
 
@@ -21,10 +26,10 @@ public class RemindersActivity extends AppCompatActivity {
         setContentView(R.layout.activity_reminders);
         mListView = (ListView) findViewById(R.id.reminders_list_view);
         mListView.setDivider(null);
-        mDbAdapter=new RemindersDbAdapter(this);
+        mDbAdapter = new RemindersDbAdapter(this);
         mDbAdapter.open();
 
-        if(savedInstanceState==null){
+        if (savedInstanceState == null) {
             mDbAdapter.deleteAllReminders();
             insertSomeReminders("Buy Learn Android Studio", true);
             insertSomeReminders("Send Dad birthday gift", false);
@@ -43,18 +48,45 @@ public class RemindersActivity extends AppCompatActivity {
             insertSomeReminders("Call the Dalai Lama back", true);
         }
 
-        Cursor cursor=mDbAdapter.fetchAllReminders();
+        Cursor cursor = mDbAdapter.fetchAllReminders();
         //from columns defined in the db
-        String[] from=new String[]{RemindersDbAdapter.COL_CONTENT};
+        String[] from = new String[]{RemindersDbAdapter.COL_CONTENT};
         //to the ids of views in the layout
-        int[] to=new int[]{R.id.row_text};
-        mCursorAdapter=new RemindersSimpleCursorAdapter(
-                RemindersActivity.this, R.layout.reminders_row,cursor,from,to,0);
+        int[] to = new int[]{R.id.row_text};
+        mCursorAdapter = new RemindersSimpleCursorAdapter(
+                RemindersActivity.this, R.layout.reminders_row, cursor, from, to, 0);
         // the cursorAdapter (controller) is now updating the listView (view)
         //with data from the db (model)
         mListView.setAdapter(mCursorAdapter);
-        //The arrayAdatper is the controller in our
-        //model-view-controller relationship. (controller)
+
+        mListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, final int masterListPosition, long id) {
+                AlertDialog.Builder builder = new AlertDialog.Builder(RemindersActivity.this);
+                ListView modeListView = new ListView(RemindersActivity.this);
+                String[] modes = new String[]{"Edit Reminder", "Delete Reminder"};
+                ArrayAdapter<String> modeAdapter = new ArrayAdapter<String>(RemindersActivity.this, android.R.layout.simple_list_item_1, android.R.id.text1, modes);
+                modeListView.setAdapter(modeAdapter);
+                builder.setView(modeListView);
+                final Dialog dialog = builder.create();
+                dialog.show();
+                modeListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                    @Override
+                    public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                        if (position == 0) {
+                            Toast.makeText(RemindersActivity.this, "edit" +
+                                    masterListPosition, Toast.LENGTH_SHORT).show();
+                        } else {
+                            Toast.makeText(RemindersActivity.this, "delete"
+                                    + masterListPosition, Toast.LENGTH_SHORT).show();
+                        }
+                        dialog.dismiss();
+                    }
+                });
+            }
+        });
+
     }
 
     private void insertSomeReminders(String name, boolean important) {
