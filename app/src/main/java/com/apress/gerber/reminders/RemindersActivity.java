@@ -1,14 +1,19 @@
 package com.apress.gerber.reminders;
 
+import android.annotation.TargetApi;
 import android.app.Dialog;
 import android.database.Cursor;
+import android.os.Build;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.ActionMode;
 import android.view.Menu;
+import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
@@ -21,6 +26,7 @@ public class RemindersActivity extends AppCompatActivity {
     private RemindersSimpleCursorAdapter mCursorAdapter;
 
     @Override
+    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_reminders);
@@ -86,7 +92,53 @@ public class RemindersActivity extends AppCompatActivity {
                 });
             }
         });
+        if(Build.VERSION.SDK_INT>=Build.VERSION_CODES.HONEYCOMB){
+            mListView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE_MODAL);
+            mListView.setMultiChoiceModeListener(new AbsListView.MultiChoiceModeListener(){
 
+                @Override
+                public boolean onCreateActionMode(ActionMode mode, Menu menu) {
+                    MenuInflater inflater=mode.getMenuInflater();
+                    inflater.inflate(R.menu.cam_menu,menu);
+                    return true;
+                }
+
+                @Override
+                public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
+                    return false;
+                }
+
+                @Override
+                public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
+                    switch (item.getItemId()){
+                        case R.id.menu_item_delete_reminder:
+                            for(int nC=mCursorAdapter.getCount()-1;nC>=0;nC--){
+                                if(mListView.isItemChecked(nC)){
+                                    mDbAdapter.deleteReminderById(getIdFromPosition(nC));
+                                }
+                            }
+                            mode.finish();
+                            mCursorAdapter.changeCursor(mDbAdapter.fetchAllReminders());
+                            return true;
+                    }
+                    return false;
+                }
+
+                @Override
+                public void onDestroyActionMode(ActionMode mode) {
+
+                }
+
+                @Override
+                public void onItemCheckedStateChanged(ActionMode mode, int position, long id, boolean checked) {
+
+                }
+            });
+        }
+    }
+
+    private int getIdFromPosition(int nC) {
+        return (int) mCursorAdapter.getItemId(nC);
     }
 
     private void insertSomeReminders(String name, boolean important) {
